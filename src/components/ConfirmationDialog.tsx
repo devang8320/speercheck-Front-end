@@ -1,28 +1,52 @@
+// ✅ ConfirmationDialog.tsx — final version with Confirm/Cancel buttons
 import React from "react";
 
-interface Props {
+interface ConfirmationDialogProps {
   open: boolean;
   onClose: () => void;
+  onConfirm: () => void;
   candidate: string;
-  engineer: string;
-  day: string;
-  time: string;
+  slot: {
+    day: string;
+    time: string;
+    engineer: string;
+    candidate: string;
+  } | null;
 }
 
-const ConfirmationDialog: React.FC<Props> = ({ open, onClose, candidate, engineer, day, time }) => {
-  if (!open) return null;
+const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
+  open,
+  onClose,
+  onConfirm,
+  candidate,
+  slot,
+}) => {
+  if (!slot) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded shadow-lg max-w-md text-center">
-        <h2 className="text-xl font-semibold mb-4">Interview Confirmed</h2>
-        <p>{candidate} will meet with {engineer} on <strong>{day} at {time}</strong></p>
-        <button
-          onClick={onClose}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Close
-        </button>
+    <div className={`fixed inset-0 bg-black bg-opacity-40 z-50 ${open ? "block" : "hidden"}`}>
+      <div className="bg-white p-6 rounded shadow-md w-96 mx-auto mt-40">
+        <h2 className="text-xl font-semibold mb-4">Confirm Interview</h2>
+
+        <p><strong>Candidate:</strong> {candidate}</p>
+        <p><strong>Engineer:</strong> {slot.engineer}</p>
+        <p><strong>Day:</strong> {slot.day}</p>
+        <p><strong>Time:</strong> {slot.time}</p>
+
+        <div className="mt-6 flex justify-end gap-4">
+          <button
+            onClick={onClose}
+            className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Confirm
+          </button>
+        </div>
       </div>
     </div>
   );

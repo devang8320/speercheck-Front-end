@@ -1,87 +1,117 @@
+// ✅ CalendarGrid.tsx
 import React from "react";
-import engineers from "../data/engineers.json";
-import candidates from "../data/candidates.json";
-import { parseTimeRange, generateAllSlots } from "../utils/Availability";
+import engineers from "../Data/engineers.json";
+import clsx from "clsx";
 
-interface Props {
-  candidateId: number | null;
-  onSlotSelect: (slot: { day: string; time: string; engineer: string }) => void;
+interface Slot {
+  day: string;
+  time: string;
+  engineer: string;
+  candidate: string;
 }
 
-const CalendarGrid: React.FC<Props> = ({ candidateId, onSlotSelect }) => {
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-  const hours = generateAllSlots();
+interface Candidate {
+  id: number;
+  name: string;
+  availability: string;
+}
 
-  const candidate = candidates.find((c) => c.id === candidateId);
-  const candidateRange = candidate ? parseTimeRange(candidate.availability) : null;
+interface CalendarGridProps {
+  selectedCandidate: Candidate;
+  setConfirmation: (slot: Slot) => void;
+  bookedSlots: Slot[];
+  setBookedSlots: React.Dispatch<React.SetStateAction<Slot[]>>;
+}
 
-  const getEngineersAvailableAt = (day: string, time: string) => {
-    return engineers.filter((eng) =>
-      eng.availability.some((slot) => {
-        const { day: d, start, end } = parseTimeRange(slot);
-        return (
-          d === day &&
-          time >= start &&
-          time < end
-        );
-      })
-    );
-  };
+const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const times = Array.from({ length: 18 }, (_, i) => {
+  const hour = 9 + Math.floor(i / 2);
+  const minute = i % 2 === 0 ? "00" : "30";
+  return `${hour.toString().padStart(2, "0")}:${minute}`;
+});
 
-  const isCandidateAvailable = (day: string, time: string) => {
-    if (!candidateRange) return false;
-    return (
-      candidateRange.day === day &&
-      time >= candidateRange.start &&
-      time < candidateRange.end
-    );
+const CalendarGrid: React.FC<CalendarGridProps> = ({
+  selectedCandidate,
+  setConfirmation,
+  bookedSlots,
+  setBookedSlots,
+}) => {
+  const isSlotAvailable = (availability: string[], day: string, time: string) => {
+    return availability.some((range) => {
+      const [availDay, hours] = range.split(" ");
+      if (availDay !== day) return false;
+      const [start, end] = hours.split("-");
+      return time >= start && time < end;
+    });
   };
 
   return (
-    <div className="overflow-x-auto mt-6">
-      <table className="w-full border-collapse">
-        <thead>
-          <tr>
-            <th className="border p-2 w-24 text-left">Time</th>
-            {days.map((day) => (
-              <th key={day} className="border p-2 text-center">{day}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {hours.map((time) => (
-            <tr key={time}>
-              <td className="border p-2 text-sm">{time}</td>
-              {days.map((day) => {
-                const engineerList = getEngineersAvailableAt(day, time);
-                const isCand = isCandidateAvailable(day, time);
-                const intersect = engineerList.length > 0 && isCand;
-                const cellColor = intersect ? "bg-blue-300 hover:bg-blue-400" :
-                                  isCand ? "bg-red-200" :
-                                  engineerList.length > 0 ? "bg-green-200" : "";
-
-                return (
-                  <td
-                    key={day + time}
-                    className={`border h-10 text-center cursor-pointer text-xs ${cellColor}`}
-                    onClick={() => {
-                      if (intersect)
-                        onSlotSelect({
-                          day,
-                          time,
-                          engineer: engineerList[0].name,
-                        });
-                    }}
-                  >
-                    {intersect ? "Book" : ""}
-                  </td>
-                );
-              })}
-            </tr>
+    <table className="w-full border-collapse text-sm text-center">
+      <thead>
+        <tr>
+          <th className="border p-2 bg-gray-100">Time</th>
+          {days.map((day) => (
+            <th key={day} className="border p-2 bg-gray-100">{day}</th>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </tr>
+      </thead>
+      <tbody>
+        {times.map((time) => (
+          <tr key={time}>
+            <td className="border p-1 bg-white font-medium">{time}</td>
+            {days.map((day) => {
+              const availableEngineers = engineers.filter((eng) =>
+                isSlotAvailable(eng.availability, day, time)
+              );
+              const isCandAvail = isSlotAvailable([selectedCandidate.availability], day, time);
+              const intersect = availableEngineers.length > 0 && isCandAvail;
+              const alreadyBooked = bookedSlots.some(
+                (slot) => slot.day === day && slot.time === time && slot.candidate === selectedCandidate.name
+              );
+
+              return (
+                <td
+                  key={day + time}
+                  className={clsx(
+                    "border p-2 transition",
+                    alreadyBooked
+                      ? "bg-yellow-400 text-white"
+                      : intersect
+                      ? "bg-blue-400 text-white hover:bg-blue-500 cursor-pointer"
+                      : isCandAvail
+                      ? "bg-yellow-200"
+                      : availableEngineers.length > 0
+                      ? "bg-green-200"
+                      : ""
+                  )}
+                  onClick={() => {
+                    if (intersect && !alreadyBooked) {
+                      setConfirmation({
+                        day,
+                        time,
+                        engineer: availableEngineers[0].name,
+                        candidate: selectedCandidate.name,
+                      });
+                      // setBookedSlots((prev) => [
+                      //   ...prev,
+                      //   {
+                      //     day,
+                      //     time,
+                      //     engineer: availableEngineers[0].name,
+                      //     candidate: selectedCandidate.name,
+                      //   },
+                      // ]);
+                    }
+                  }}
+                >
+                  {intersect && !alreadyBooked ? "Book" : alreadyBooked ? "✔" : ""}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 };
 

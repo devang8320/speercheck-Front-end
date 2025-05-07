@@ -1,48 +1,67 @@
 import React, { useState } from "react";
-import candidates from "./data/candidates.json";
-import CandidateSelector from "./components/CandidateSelector";
 import CalendarGrid from "./components/CalendarGrid";
 import ConfirmationDialog from "./components/ConfirmationDialog";
-import logo from "./assets/logo.png";
+import candidates from "./Data/candidates.json";
 
-function App() {
+const App: React.FC = () => {
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
-  const [confirmation, setConfirmation] = useState<{ engineer: string; time: string; day: string } | null>(null);
+  const [confirmation, setConfirmation] = useState<{
+    day: string;
+    time: string;
+    engineer: string;
+    candidate: string;
+  } | null>(null);
 
-  const candidateName = candidates.find((c) => c.id === selectedCandidateId)?.name || "";
+  const [bookedSlots, setBookedSlots] = useState<
+    { day: string; time: string; engineer: string; candidate: string }[]
+  >([]);
+
+  const selectedCandidate = candidates.find((c) => c.id === selectedCandidateId);
 
   return (
     <div className="max-w-5xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">SpeerCheck: Interview Scheduler</h1>
+
       <div className="flex items-center mb-6">
-        <img src={logo} alt="SpeerCheck Logo" className="h-10 w-10 mr-3" />
-        <h1 className="text-3xl font-bold">SpeerCheck: Interview Scheduler</h1>
+        <label htmlFor="candidate" className="mr-4 font-semibold">
+          Select Candidate:
+        </label>
+        <select
+          id="candidate"
+          value={selectedCandidateId ?? ""}
+          onChange={(e) => setSelectedCandidateId(Number(e.target.value))}
+          className="border px-3 py-1 rounded w-64"
+        >
+          <option value="" disabled>Select...</option>
+          {candidates.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
       </div>
-  
-      <CandidateSelector
-        candidates={candidates}
-        selectedId={selectedCandidateId}
-        onSelect={setSelectedCandidateId}
-      />
-      <CalendarGrid
-        candidateId={selectedCandidateId}
-        onSlotSelect={(slot) => setConfirmation(slot)}
-      />
+
+      {selectedCandidate && (
+        <CalendarGrid
+          selectedCandidate={selectedCandidate}
+          setConfirmation={setConfirmation}
+          bookedSlots={bookedSlots}
+          setBookedSlots={setBookedSlots}
+        />
+      )}
+
       <ConfirmationDialog
         open={!!confirmation}
         onClose={() => setConfirmation(null)}
-        candidate={candidateName}
-        engineer={confirmation?.engineer || ""}
-        day={confirmation?.day || ""}
-        time={confirmation?.time || ""}
+        candidate={selectedCandidate?.name || ""}
+        slot={confirmation}
+        onConfirm={() => {
+          if (confirmation) {
+            setBookedSlots((prev) => [...prev, confirmation]);
+            setConfirmation(null);
+          }
+        }}
       />
-  
-      <footer className="mt-6 text-center">
-        <p className="text-sm text-gray-600">© 2025 SpeerCheck. All rights reserved.</p>
-        <p className="text-sm text-gray-600">Built with Devang Vasani</p>
-        <p className="text-sm text-gray-600">Version 1.0.0</p>
-        <p className="text-sm text-gray-600">Contact: devangvasani8320@gmail.com</p>
-      </footer>
     </div>
   );
-}  
+};
+
 export default App;
