@@ -92,15 +92,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                         engineer: availableEngineers[0].name,
                         candidate: selectedCandidate.name,
                       });
-                      // setBookedSlots((prev) => [
-                      //   ...prev,
-                      //   {
-                      //     day,
-                      //     time,
-                      //     engineer: availableEngineers[0].name,
-                      //     candidate: selectedCandidate.name,
-                      //   },
-                      // ]);
+                    
                     }
                   }}
                 >
